@@ -1,0 +1,5 @@
+{
+  "name": "Video to Blog Generator",
+  "description": "An AI-powered application that analyzes video content and automatically generates a complete, well-structured blog post including a title, summary, key points, timestamps, and image suggestions.",
+  "requestFramePermissions": []
+}
