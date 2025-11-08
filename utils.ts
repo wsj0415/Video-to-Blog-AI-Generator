@@ -1,4 +1,4 @@
-import { ImageSuggestion, ExtractedFrame } from './types';
+import { ImageSuggestion, ExtractedFrame, BlogPost } from './types';
 
 const parseTimestamp = (time: string): number => {
     const parts = time.split(':').map(Number);
@@ -79,4 +79,29 @@ export const extractFramesFromVideo = (
             reject(new Error('Failed to load video file.'));
         };
     });
+};
+
+export const formatBlogPostAsMarkdown = (blogPost: BlogPost): string => {
+  let markdown = '';
+
+  markdown += `# ${blogPost.title}\n\n`;
+
+  markdown += `## Summary\n${blogPost.summary}\n\n`;
+
+  // Body is already in Markdown, so we just add it.
+  markdown += `${blogPost.body}\n\n`;
+
+  markdown += `## Key Points\n`;
+  blogPost.keyPoints.forEach(point => {
+    markdown += `- ${point}\n`;
+  });
+  markdown += `\n`;
+
+  markdown += `## Timestamped Notes\n`;
+  blogPost.timestamps.forEach(ts => {
+    markdown += `- **${ts.time}**: ${ts.description}\n`;
+  });
+  markdown += `\n`;
+
+  return markdown.trim();
 };

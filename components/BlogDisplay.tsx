@@ -1,5 +1,6 @@
 import React from 'react';
 import { BlogPost, Timestamp, ImageSuggestion, ExtractedFrame } from '../types';
+import { KeyPointIcon } from './icons/KeyPointIcon';
 
 interface BlogDisplayProps {
   blogPost: BlogPost;
@@ -28,7 +29,7 @@ const ImageSuggestionCard: React.FC<{ item: ImageSuggestion }> = ({ item }) => (
 );
 
 const ImageFrameCard: React.FC<{ item: ExtractedFrame }> = ({ item }) => (
-    <div className="flex flex-col space-y-3 p-3 bg-gray-800 border border-gray-700 rounded-lg shadow-md transition-transform transform hover:scale-105">
+    <div className="flex flex-col space-y-3 p-3 bg-gray-800 border border-gray-700 rounded-lg shadow-md transition-transform transform hover:scale-105 hover:shadow-blue-500/20">
         <img src={item.imageDataUrl} alt={item.description} className="rounded-md object-cover w-full aspect-video" />
         <div className="text-center px-1">
             <p className="font-semibold text-brand-light text-sm">Frame at {item.time}</p>
@@ -39,16 +40,54 @@ const ImageFrameCard: React.FC<{ item: ExtractedFrame }> = ({ item }) => (
 
 
 export const BlogDisplay: React.FC<BlogDisplayProps> = ({ blogPost, extractedFrames }) => {
-  // A simple markdown to HTML converter for body text
   const renderMarkdown = (text: string) => {
-    // Basic bold and italic
-    let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    let processedText = `\n${text}\n`;
+
+    // Code blocks (```...```)
+    processedText = processedText.replace(/\n```(\w*)\n([\s\S]*?)\n```/g, (match, lang, code) => {
+        const escapedCode = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `\n<pre class="bg-gray-900 rounded-md p-4 text-sm font-mono overflow-x-auto my-4"><code class="language-${lang}">${escapedCode.trim()}</code></pre>\n`;
+    });
+
+    // Process blocks split by double newlines
+    const blocks = processedText.trim().split(/\n\s*\n/);
+    
+    let html = blocks.map(block => {
+        if (block.startsWith('<pre>')) return block; // Already processed
+        
+        // Headers
+        if (block.match(/^##\s/)) return `<h2 class="text-2xl font-bold mt-8 mb-3">${block.replace(/^##\s/, '')}</h2>`;
+        if (block.match(/^###\s/)) return `<h3 class="text-xl font-semibold mt-6 mb-2">${block.replace(/^###\s/, '')}</h3>`;
+        
+        // Blockquotes
+        if (block.match(/^>\s/)) {
+             const quoteLines = block.split('\n').map(l => l.replace(/^>\s?/, '')).join('<br>');
+             return `<blockquote class="border-l-4 border-brand-secondary pl-4 italic text-gray-400 my-4">${quoteLines}</blockquote>`;
+        }
+        
+        // Lists (unordered)
+        if (block.match(/^[-*]\s/)) {
+            const items = block.split('\n').map(item => `<li class="pl-2">${item.replace(/^[-*]\s/, '')}</li>`).join('');
+            return `<ul class="list-disc list-inside space-y-2 my-4">${items}</ul>`;
+        }
+        
+        // Lists (ordered)
+        if (block.match(/^\d+\.\s/)) {
+            const items = block.split('\n').map(item => `<li class="pl-2">${item.replace(/^\d+\.\s/, '')}</li>`).join('');
+            return `<ol class="list-decimal list-inside space-y-2 my-4">${items}</ol>`;
+        }
+        
+        // Paragraphs
+        if(block.trim()) {
+          return `<p>${block}</p>`;
+        }
+        return '';
+    }).join('');
+
+    // Inline elements (bold, italic)
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-    // Headers
-    html = html.replace(/^### (.*$)/gim, '<h3 class="text-xl font-semibold mt-6 mb-2">$1</h3>');
-    html = html.replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold mt-8 mb-3">$1</h2>');
-    // Newlines
-    html = html.replace(/\n/g, '<br />');
+    
     return { __html: html };
   };
 
@@ -71,11 +110,14 @@ export const BlogDisplay: React.FC<BlogDisplayProps> = ({ blogPost, extractedFra
 
         <div className="mt-12">
             <h2 className="text-2xl font-bold mb-4 text-brand-light border-b-2 border-brand-primary pb-2">Key Points</h2>
-            <ul className="list-disc list-inside space-y-3 pl-2">
+            <div className="space-y-4">
                 {blogPost.keyPoints.map((point, index) => (
-                    <li key={index} className="text-gray-300">{point}</li>
+                    <div key={index} className="flex items-start space-x-3">
+                        <KeyPointIcon className="w-6 h-6 text-brand-secondary flex-shrink-0 mt-1" />
+                        <p className="text-gray-300">{point}</p>
+                    </div>
                 ))}
-            </ul>
+            </div>
         </div>
         
         {showExtractedFrames && (
